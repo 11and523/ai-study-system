@@ -1,28 +1,94 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="apple-mobile-web-app-capable" content="yes"><title>AI学习系统</title>
-<style>*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;background:#f6f7fb;color:#17181c}.app{max-width:720px;margin:auto;padding-bottom:75px}header{padding:24px 18px 12px;background:#fff;position:sticky;top:0;z-index:2}h1{margin:0 0 5px;font-size:28px}.sub,.meta,.small{color:#777;font-size:13px}.card{background:#fff;border-radius:16px;margin:12px 14px;padding:16px;box-shadow:0 2px 12px #0000000d}.section-title{font-weight:700;font-size:17px;margin-bottom:12px}.progress{font-size:13px;color:#666;margin-bottom:8px}.bar{height:8px;background:#eceef2;border-radius:99px}.fill{height:100%;background:#111;border-radius:99px}.row{display:flex;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid #eee}.row:last-child,.course:last-child{border:0}.check{width:22px;height:22px}.main{flex:1}.title{font-weight:600}.page{display:none}.page.active{display:block}.empty{color:#888;font-size:14px;padding:8px 0}.day{font-weight:700;margin:14px 0 6px}.course{padding:10px 0;border-bottom:1px solid #eee}.time{font-size:12px;color:#777;margin-top:4px}nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #ddd;display:flex;justify-content:center;z-index:5}nav button{border:0;background:none;padding:11px 16px;color:#777;font-size:12px}nav button.active{color:#111;font-weight:700}</style></head><body><div class="app">
-<header><h1 id="title">今日学习</h1><div id="date" class="sub"></div></header>
-<main id="home" class="page active"><div class="card"><div id="prog" class="progress"></div><div class="bar"><div id="fill" class="fill"></div></div></div><div class="card"><div class="section-title">今日课程</div><div id="today"></div></div><div class="card"><div class="section-title">今日任务</div><div id="tasks"></div></div><div class="card"><div class="section-title">学习建议</div><div class="small">先完成当天课程对应复习，再完成四级和高数核心任务。后续会接入错题与知识点掌握度，自动调整任务。</div></div></main>
-<main id="schedule" class="page"><div class="card"><div class="section-title">2026–2027学年第一学期</div><div class="small">第1周：2026-09-07；教学周1–16，考试周17–19</div><div id="sched"></div></div></main>
-<main id="courses" class="page"><div class="card"><div class="section-title">课程</div><div id="courseList"></div></div></main>
-<main id="wrong" class="page"><div class="card"><div class="section-title">错题</div><div class="empty">V1.1暂保留入口。后续接入题库后，做错的题会自动记录。</div></div></main>
-<nav><button class="active" onclick="page('home',this)">今日学习</button><button onclick="page('schedule',this)">课程表</button><button onclick="page('courses',this)">课程</button><button onclick="page('wrong',this)">错题</button></nav></div>
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#102a56"><title>AI学习系统 V1.4</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:#f3f6fb;color:#17233d}
+button,input,select,textarea{font:inherit}button{border:0}.app{max-width:560px;margin:auto;min-height:100vh;padding-bottom:82px}
+.hero{background:linear-gradient(145deg,#071b3d,#174b91 72%,#2b72bd);color:#fff;padding:25px 18px 28px;border-radius:0 0 30px 30px}.top{display:flex;justify-content:space-between}.brand{font-size:22px;font-weight:800}.week{font-size:12px;background:#ffffff22;padding:7px 10px;border-radius:999px}.date{margin-top:17px;font-size:13px;opacity:.82}.title{font-size:28px;font-weight:850;margin-top:4px}.sub{font-size:13px;opacity:.8}
+.wrap{padding:16px}.card,.action{background:#fff;border-radius:20px;padding:16px;margin-bottom:12px;box-shadow:0 5px 18px #1e345812}.stat{display:flex;justify-content:space-between}.stat strong{font-size:22px}.bar{height:8px;background:#e9edf5;border-radius:20px;overflow:hidden;margin-top:10px}.bar i{display:block;height:100%;background:#2769b5;width:0}.muted{font-size:12px;color:#8a94a8}.actions{display:grid;grid-template-columns:1fr 1fr;gap:11px}.action{text-align:left;margin:0}.action .ico{font-size:25px}.action b{display:block;margin-top:8px}.action small{color:#8a94a8}.page{display:none}.page.active{display:block}.qmeta{display:flex;justify-content:space-between;color:#8791a6;font-size:12px}.qtext{font-size:18px;line-height:1.7;font-weight:700;margin:17px 0}.option{width:100%;padding:13px 14px;margin:7px 0;text-align:left;border:1px solid #e2e7f0;background:#fff;border-radius:13px;color:#26334d}.option.selected{border-color:#2869b6;background:#edf5ff}.option.correct{border-color:#45a56b;background:#edf9f1}.option.wrong{border-color:#d85c68;background:#fff0f1}.submit,.primary{width:100%;background:#123d75;color:#fff;padding:14px;border-radius:14px;font-weight:750;margin-top:10px}.next{width:100%;background:#e9f0fa;color:#173f70;padding:14px;border-radius:14px;font-weight:750;margin-top:10px}.explain{background:#f6f8fc;border-radius:14px;padding:13px;margin-top:13px;font-size:13px;line-height:1.7}.result{padding:12px;border-radius:13px;margin-top:10px;font-weight:700}.ok{background:#edf9f1;color:#277a4b}.bad{background:#fff0f1;color:#a33e4a}.list{padding:13px 0;border-bottom:1px solid #edf0f5}.bottom{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(560px,100%);height:74px;background:#fffffff7;display:flex;justify-content:space-around;border-top:1px solid #e7ebf2;z-index:5}.nav{background:none;color:#9099ab;font-size:11px}.nav span{display:block;font-size:21px}.nav.active{color:#174e8f;font-weight:800}
+.audio{background:#eef4fb;border-radius:17px;padding:16px;margin:12px 0}.play{width:100%;padding:14px;background:#123d75;color:#fff;border-radius:13px;font-weight:750}.transcript{display:none;background:#fff;border-radius:13px;padding:13px;margin-top:12px;line-height:1.65;font-size:14px}
+.tabs{display:flex;gap:8px;overflow:auto;margin-bottom:12px}.tab{white-space:nowrap;padding:9px 13px;border-radius:999px;background:#e9eef6;color:#4b5c75;font-size:12px}.tab.on{background:#123d75;color:#fff}
+.form input,.form select,.form textarea{width:100%;padding:12px;border:1px solid #dfe5ef;border-radius:12px;background:#fff;margin:6px 0 10px;outline:none}.form textarea{min-height:90px;resize:vertical}.mini{padding:9px 12px;background:#edf2f8;border-radius:10px;color:#254c7d;font-size:12px}.danger{color:#a43f49;background:#fff0f1}
+.mathtag{display:inline-block;padding:5px 8px;border-radius:999px;background:#edf3fa;color:#285486;font-size:11px;margin-right:5px}
+</style></head>
+<body><div class="app">
+<header class="hero"><div class="top"><div class="brand">AI学习系统</div><div class="week" id="week"></div></div><div class="date" id="date"></div><div class="title">今日学习</div><div class="sub">课程、题库、方法、错题和掌握度逐步连接。</div></header>
+<main class="wrap">
+<section id="home" class="page active">
+<div class="card"><div class="stat"><span>累计练习正确率</span><strong id="score">0%</strong></div><div class="bar"><i id="bar"></i></div><div class="muted" id="summary" style="margin-top:9px">还没有练习记录</div></div>
+<div class="actions">
+<button class="action" onclick="start('vocab')"><div class="ico">🔤</div><b>四级词汇</b><small>专项练习</small></button>
+<button class="action" onclick="start('reading')"><div class="ico">📖</div><b>四级阅读</b><small>阅读理解</small></button>
+<button class="action" onclick="startListen()"><div class="ico">🎧</div><b>四级听力</b><small>播放＋精听</small></button>
+<button class="action" onclick="start('math')"><div class="ico">∫</div><b>高等数学</b><small>按章节刷题</small></button>
+<button class="action" onclick="show('methods')"><div class="ico">🧠</div><b>方法/知识库</b><small>自己持续添加</small></button>
+<button class="action" onclick="show('wrong')"><div class="ico">❌</div><b>我的错题</b><small id="wc">0道</small></button>
+</div></section>
+
+<section id="quiz" class="page"><div class="card"><div class="qmeta"><span id="qt"></span><span id="qn"></span></div><div class="qtext" id="qq"></div><div id="opts"></div><button class="submit" id="sb" onclick="submitQ()">提交答案</button><div id="fb"></div><button class="next" id="nx" onclick="nextQ()" style="display:none">下一题</button></div></section>
+
+<section id="listen" class="page"><div class="card"><div class="qmeta"><span>四级听力·短对话</span><span id="ln"></span></div><div class="audio"><button class="play" onclick="playAudio()">▶ 播放听力</button><div class="transcript" id="tr"></div></div><div class="qtext" id="lq"></div><div id="lopts"></div><button class="submit" id="lsb" onclick="submitL()">提交答案</button><div id="lfb"></div><button class="next" id="lnx" onclick="nextL()" style="display:none">下一题</button></div></section>
+
+<section id="methods" class="page"><div class="card"><h2>方法 / 知识库</h2><div class="muted">以后新增学习方法、公式、知识点，不需要改程序；直接在这里添加即可。</div></div><div class="card"><div class="tabs"><button class="tab on" onclick="methodTab('all',this)">全部</button><button class="tab" onclick="methodTab('math',this)">高数</button><button class="tab" onclick="methodTab('english',this)">英语</button></div><div id="methodList"></div><button class="primary" onclick="show('add')">＋ 添加方法/知识点</button></div></section>
+
+<section id="add" class="page"><div class="card form"><h2>添加到知识库</h2><label>名称</label><input id="mn" placeholder="例如：立方差公式 / 夹逼准则"><label>分类</label><select id="mc"><option value="math">高等数学</option><option value="english">英语</option><option value="accounting">会计</option><option value="computer">计算机</option><option value="other">其他</option></select><label>内容</label><textarea id="mb" placeholder="写公式、方法、注意事项、易错点……"></textarea><button class="primary" onclick="addMethod()">保存</button></div></section>
+
+<section id="wrong" class="page"><div class="card"><h2>错题本</h2><div id="wrongList"></div></div></section>
+<section id="stats" class="page"><div class="card"><h2>学习统计</h2><div id="statsBox"></div></div></section>
+<section id="schedule" class="page"><div class="card"><h2>课程表</h2><p class="muted">周一：大学英语AI、英语口语、会计专业英语、中国近现代史纲要、职业生涯规划/管理学实验</p><p class="muted">周二：心理健康、高等数学、大学体育、会计学</p><p class="muted">周三：大学英语AI、计算思维导论、管理学、高等数学、形势与政策</p><p class="muted">周四：ACCA导论、管理学实验</p><p class="muted">周五：英语写作CI、计算思维导论实验、管理学、专业英语</p></div></section>
+</main>
+<nav class="bottom"><button class="nav active" data-p="home"><span>⌂</span>今日</button><button class="nav" data-p="schedule"><span>▦</span>课程表</button><button class="nav" data-p="methods"><span>🧠</span>知识</button><button class="nav" data-p="wrong"><span>✓</span>错题</button></nav></div>
+
 <script>
-const start=new Date('2026-09-07T00:00:00');
-const C=[
-['大学英语AI',1,'08:30','10:00'],['英语口语（ACCA&CIMA）',1,'10:20','11:50'],['会计专业英语',1,'14:00','15:30'],['中国近现代史纲要',1,'15:50','18:10'],['职业生涯规划与就业指导',1,'19:00','21:20','部分周次为管理学实验'],
-['心理健康',2,'08:30','10:00','部分周次'],['高等数学',2,'10:20','11:50'],['大学体育1（气排球）',2,'14:00','15:30'],['会计学',2,'19:00','21:20'],
-['大学英语AI',3,'08:30','10:00'],['计算思维导论',3,'10:20','11:50'],['管理学',3,'14:00','15:30'],['高等数学',3,'15:50','18:10'],['形势与政策',3,'19:00','21:20'],
-['ACCA导论',4,'08:30','10:00'],['管理学实验',4,'10:20','11:50','部分周次'],
-['英语写作CI',5,'08:30','10:00'],['计算思维导论实验',5,'10:20','11:50'],['管理学',5,'14:00','15:30','部分周次'],['会计专业英语',5,'15:50','18:10','部分周次']
-];
-const T=[['四级词汇','CET-4','30词',30],['四级听力','CET-4','真题听力训练',30],['四级阅读','CET-4','阅读真题1组',25],['高数复习','高等数学','复习当天/最近知识点',35],['专业英语','会计专业英语','复习课堂重点',20]];
-const key='ais_v11_';
-function wn(d){return Math.floor((new Date(d.getFullYear(),d.getMonth(),d.getDate())-start)/604800000)+1}
-function ds(d){return d.getFullYear()+'年'+(d.getMonth()+1)+'月'+d.getDate()+'日 星期'+'日一二三四五六'[d.getDay()]+' · 第'+wn(d)+'周'}
-function tasks(d){let k=key+d.toISOString().slice(0,10),x=localStorage.getItem(k);if(x)return JSON.parse(x);let a=T.map((v,i)=>({id:i,title:v[0],tag:v[1],meta:v[2],min:v[3],done:false}));localStorage.setItem(k,JSON.stringify(a));return a}
-function render(){let d=new Date(),a=tasks(d),done=a.filter(x=>x.done).length;document.getElementById('date').textContent=ds(d);document.getElementById('prog').textContent='今日进度 '+done+'/'+a.length;document.getElementById('fill').style.width=done/a.length*100+'%';let wd=d.getDay()||7,cc=C.filter(x=>x[1]===wd);document.getElementById('today').innerHTML=cc.length?cc.map(x=>'<div class="row"><div class="main"><div class="title">'+x[0]+'</div><div class="meta">'+x[2]+'–'+x[3]+(x[4]?' · '+x[4]:'')+'</div></div></div>').join(''):'<div class="empty">今天没有安排课程。</div>';document.getElementById('tasks').innerHTML=a.map((x,i)=>'<div class="row"><input class="check" type="checkbox" '+(x.done?'checked':'')+' onchange="toggle('+i+')"><div class="main"><div class="title">'+x.title+'</div><div class="meta">'+x.tag+' · '+x.meta+' · 约'+x.min+'分钟</div></div></div>').join('')}
-function toggle(i){let d=new Date(),k=key+d.toISOString().slice(0,10),a=tasks(d);a[i].done=!a[i].done;localStorage.setItem(k,JSON.stringify(a));render()}
-function build(){let names=['星期一','星期二','星期三','星期四','星期五'];document.getElementById('sched').innerHTML=names.map((n,i)=>'<div class="day">'+n+'</div>'+C.filter(x=>x[1]===i+1).map(x=>'<div class="course"><b>'+x[0]+'</b><div class="time">'+x[2]+'–'+x[3]+(x[4]?' · '+x[4]:'')+'</div></div>').join('')).join('');document.getElementById('courseList').innerHTML=[...new Set(C.map(x=>x[0]))].map(x=>'<div class="course"><b>'+x+'</b></div>').join('')}
-function page(id,b){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById('title').textContent={home:'今日学习',schedule:'课程表',courses:'课程',wrong:'错题'}[id]}
-render();build();
+const builtin={
+vocab:[
+["四级词汇","The new policy may ______ the development of small businesses.",["A. affect","B. effect","C. afford","D. effort"],0,"affect 是动词“影响”。"],
+["四级词汇","Students should be ______ of the importance of time management.",["A. aware","B. awake","C. alive","D. alone"],0,"be aware of = 意识到。"],
+["四级词汇","The company plans to ______ a new marketing strategy.",["A. acquire","B. adopt","C. admire","D. arrange"],1,"adopt = 采用、采纳。"]],
+reading:[
+["四级阅读","Focused study with regular breaks can be more effective than simply studying for longer hours. What is the main idea?",["A. Longer study is always better.","B. Breaks are unnecessary.","C. Focused study and breaks may improve learning.","D. Students should study all night."],2,"专注学习配合适当休息可能更有效。"]],
+math:[
+["高数·极限·选择","若 lim(x→0) sin x / x = ?",["A. 0","B. 1","C. ∞","D. 不存在"],1,"重要极限：lim(x→0) sin x/x=1，x必须用弧度。","基础"],
+["高数·极限·选择","lim(x→∞)(1+1/x)^x = ?",["A. 0","B. 1","C. e","D. ∞"],2,"第二个重要极限，结果为 e。","基础"],
+["高数·极限·选择","a³−b³ = ?",["A. (a−b)(a²+ab+b²)","B. (a+b)(a²−ab+b²)","C. (a−b)(a²−ab+b²)","D. (a+b)(a²+ab+b²)"],0,"立方差公式，常用于0/0型极限因式分解后约分。","基础"],
+["高数·极限·计算","求 lim(x→1) (x³−1)/(x−1)。",["A. 0","B. 1","C. 3","D. 不存在"],2,"x³−1=(x−1)(x²+x+1)，约去后代入x=1，得到3。","基础"],
+["高数·极限·选择","若 lim f(x)=2，lim g(x)=3，则 lim[f(x)+g(x)] = ?",["A. 5","B. 6","C. 1","D. 不确定"],0,"极限的和法则：极限存在时，和的极限等于极限之和。","基础"],
+["高数·极限·计算","求 lim(x→0) (1−cos x)/x²。",["A. 0","B. 1/2","C. 1","D. 不存在"],1,"利用1−cos x=2sin²(x/2)，化为1/2·[sin(x/2)/(x/2)]²。","提高"]
+]};
+const listening=[
+["A student says: “I thought the library closed at eight.” The woman replies: “It stays open until ten during exam week.” What can we learn?",["A. The library closes at eight every day.","B. It is exam week and the library closes at ten.","C. The library stays open later during exam week.","D. The student never uses the library."],2,"It stays open until ten during exam week."],
+["Man: “Did you finish the report?” Woman: “Almost. I only need to check the figures.” What does the woman mean?",["A. She has not started the report.","B. The report is nearly finished.","C. She lost the figures.","D. She will cancel the report."],1,"Almost 表示“差不多了”，她只需要检查数据。"]];
+const defaultMethods=[
+["极限的和差积商法则","math","若各极限存在，则和、差、积可直接分别取极限；商法则还要求分母极限不为0。"],
+["两个重要极限","math","lim(x→0) sin x/x=1；lim(x→∞)(1+1/x)^x=e。前者要求弧度制。"],
+["立方差公式","math","a³−b³=(a−b)(a²+ab+b²)，常用于0/0型极限约分。"],
+["做题原则：先判断型","math","遇到极限先判断是0/0、∞/∞、非未定式还是其他类型，再选择因式分解、等价无穷小、重要极限等方法。"],
+["四级听力精听法","english","第一遍只听并做题；第二遍看原文核对；第三遍关闭原文重新听；把听不出的词记录为薄弱词。"]];
+
+let rec=JSON.parse(localStorage.getItem("v14rec")||"[]"),wrong=JSON.parse(localStorage.getItem("v14wrong")||"[]"),methods=JSON.parse(localStorage.getItem("v14methods")||"null")||defaultMethods.slice(),arr=[],idx=0,sel=null,ans=false,li=0,currentMethodFilter="all";
+const st=new Date(2026,8,7),now=new Date(),wk=Math.floor((new Date(now.getFullYear(),now.getMonth(),now.getDate())-st)/604800000)+1;
+week.textContent="第"+wk+"周";date.textContent=now.getFullYear()+"年"+(now.getMonth()+1)+"月"+now.getDate()+"日";
+function persist(){localStorage.setItem("v14rec",JSON.stringify(rec));localStorage.setItem("v14wrong",JSON.stringify(wrong));localStorage.setItem("v14methods",JSON.stringify(methods));home()}
+function home(){let n=rec.length,c=rec.filter(x=>x.ok).length,p=n?Math.round(c/n*100):0;score.textContent=p+"%";bar.style.width=p+"%";summary.textContent=n?c+" 对 / "+(n-c)+" 错，共练习 "+n+" 题":"还没有练习记录";wc.textContent=wrong.length+"道"}
+function show(id){document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));document.getElementById(id).classList.add("active");document.querySelectorAll(".nav").forEach(x=>x.classList.toggle("active",x.dataset.p===id));if(id==="methods")renderMethods();if(id==="wrong")renderWrong();if(id==="stats")renderStats()}
+document.querySelectorAll(".nav").forEach(x=>x.onclick=()=>show(x.dataset.p));
+function start(type){arr=builtin[type];idx=0;show("quiz");renderQ()}
+function renderQ(){let q=arr[idx];qt.textContent=q[0];qn.textContent=(idx+1)+"/"+arr.length;qq.textContent=q[1];opts.innerHTML=q[2].map((x,j)=>'<button class="option" onclick="choose('+j+')">'+x+"</button>").join("");sb.style.display="block";nx.style.display="none";fb.innerHTML="";sel=null;ans=false}
+function choose(j){if(ans)return;sel=j;document.querySelectorAll("#opts .option").forEach((x,k)=>x.classList.toggle("selected",k===j))}
+function submitQ(){if(sel===null)return alert("请先选择答案");if(ans)return;ans=true;let q=arr[idx],ok=sel===q[3];rec.push({ok:ok,t:q[0]});if(!ok&&!wrong.some(x=>x.q===q[1]))wrong.push({q:q[1],a:q[2][q[3]],e:q[4],t:q[0]});document.querySelectorAll("#opts .option").forEach((x,k)=>{if(k===q[3])x.classList.add("correct");if(k===sel&&k!==q[3])x.classList.add("wrong")});fb.innerHTML='<div class="result '+(ok?"ok":"bad")+'">'+(ok?"✓ 回答正确":"✕ 回答错误，正确答案："+q[2][q[3]])+'</div><div class="explain"><b>解析：</b>'+q[4]+'</div>';sb.style.display="none";nx.style.display="block";persist()}
+function nextQ(){if(idx<arr.length-1){idx++;renderQ()}else{alert("本组练习完成");show("stats")}}
+function startListen(){li=0;show("listen");renderL()}
+function renderL(){let q=listening[li];ln.textContent=(li+1)+"/"+listening.length;lq.textContent=q[0];lopts.innerHTML=q[1].map((x,j)=>'<button class="option" onclick="lchoose('+j+')">'+x+"</button>").join("");tr.style.display="none";tr.textContent="听力原文："+q[3];lsb.style.display="block";lnx.style.display="none";lfb.innerHTML="";sel=null;ans=false}
+function playAudio(){let q=listening[li];tr.style.display="block";if("speechSynthesis"in window){speechSynthesis.cancel();let u=new SpeechSynthesisUtterance(q[3]);u.lang="en-US";u.rate=.88;speechSynthesis.speak(u)}}
+function lchoose(j){if(ans)return;sel=j;document.querySelectorAll("#lopts .option").forEach((x,k)=>x.classList.toggle("selected",k===j))}
+function submitL(){if(sel===null)return alert("请先选择答案");if(ans)return;ans=true;let q=listening[li],ok=sel===q[2];rec.push({ok:ok,t:"四级听力"});if(!ok&&!wrong.some(x=>x.q===q[0]))wrong.push({q:q[0],a:q[1][q[2]],e:q[3],t:"四级听力"});document.querySelectorAll("#lopts .option").forEach((x,k)=>{if(k===q[2])x.classList.add("correct");if(k===sel&&k!==q[2])x.classList.add("wrong")});lfb.innerHTML='<div class="result '+(ok?"ok":"bad")+'">'+(ok?"✓ 回答正确":"✕ 回答错误，正确答案："+q[1][q[2]])+'</div><div class="explain"><b>精听：</b>'+q[3]+"<br><br>建议：再听一遍 → 看原文 → 关闭原文重新听。</div>";lsb.style.display="none";lnx.style.display="block";persist()}
+function nextL(){if(li<listening.length-1){li++;renderL()}else{alert("听力训练完成");show("stats")}}
+function renderWrong(){wrongList.innerHTML=wrong.length?wrong.map((x,k)=>'<div class="list"><b>'+(k+1)+". "+x.q+'</b><div class="muted" style="margin-top:6px">'+x.t+" · 正确答案："+x.a+'</div><div style="font-size:13px;line-height:1.55;margin-top:6px">'+x.e+"</div></div>").join(""):'<div class="muted" style="padding:20px;text-align:center">暂无错题。</div>'}
+function renderStats(){let n=rec.length,c=rec.filter(x=>x.ok).length,p=n?Math.round(c/n*100):0;statsBox.innerHTML="<div class='stat'><b>累计练习</b><strong>"+n+"</strong></div><div class='list'><b>总体正确率</b><div class='bar'><i style='width:"+p+"%'></i></div><div class='muted' style='margin-top:7px'>"+c+" 对 / "+(n-c)+" 错 · "+p+"%</div></div><div class='list'><b>当前错题</b><div class='muted' style='margin-top:6px'>"+wrong.length+" 道</div></div>"}
+function methodTab(f,b){currentMethodFilter=f;document.querySelectorAll(".tab").forEach(x=>x.classList.remove("on"));b.classList.add("on");renderMethods()}
+function renderMethods(){let list=currentMethodFilter==="all"?methods:methods.filter(x=>x[1]===currentMethodFilter);methodList.innerHTML=list.map((x,i)=>'<div class="list"><span class="mathtag">'+x[1]+'</span><b>'+x[0]+'</b><div style="font-size:13px;line-height:1.65;margin-top:7px">'+x[2]+'</div></div>').join("")}
+function addMethod(){let n=mn.value.trim(),b=mb.value.trim(),c=mc.value;if(!n||!b)return alert("请填写名称和内容");methods.push([n,c,b]);mn.value="";mb.value="";persist();show("methods")}
+home();renderMethods();
 </script></body></html>
