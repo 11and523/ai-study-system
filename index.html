@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111827">
+<title>AI学习系统</title>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",sans-serif;color:#111827;background:#f4f6f8}
+*{box-sizing:border-box}body{margin:0;background:#f4f6f8}.app{max-width:720px;margin:auto;min-height:100vh;padding-bottom:86px}
+header{background:#111827;color:#fff;padding:28px 20px 22px;border-radius:0 0 26px 26px}.date{font-size:13px;opacity:.7}.week{margin-top:5px;font-size:13px;opacity:.75}h1{margin:6px 0 0;font-size:28px}
+main{padding:16px}.card{background:#fff;border:1px solid #e8ebef;border-radius:18px;padding:16px;margin-bottom:14px}.row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+h2{font-size:17px;margin:0 0 12px}.muted{color:#6b7280;font-size:13px}.progress{height:8px;background:#edf0f3;border-radius:99px;overflow:hidden}.progress div{height:100%;background:#111827;width:0;transition:.2s}
+.task{display:flex;gap:12px;padding:13px 0;border-top:1px solid #eef0f2}.task:first-child{border-top:0}.task input{width:20px;height:20px}.task b{font-size:15px}.task small{display:block;color:#6b7280;margin-top:4px;line-height:1.45}
+.class{display:flex;gap:12px;padding:11px 0;border-top:1px solid #eef0f2}.class:first-child{border-top:0}.time{width:100px;font-weight:600;font-size:13px}.name{flex:1;font-size:14px}
+button{font:inherit}.btn{border:0;background:#111827;color:#fff;border-radius:11px;padding:9px 12px;font-weight:600}.btn2{border:1px solid #dfe3e8;background:#fff;color:#111827;border-radius:11px;padding:8px 10px}.pill{font-size:11px;padding:4px 8px;background:#f0f2f5;border-radius:99px;color:#4b5563}
+nav{position:fixed;bottom:0;left:0;right:0;height:70px;background:rgba(255,255,255,.96);backdrop-filter:blur(14px);border-top:1px solid #e5e7eb;display:flex;justify-content:center;z-index:9}nav button{flex:1;max-width:180px;border:0;background:none;color:#6b7280;font-size:12px}nav button.active{color:#111827;font-weight:700}
+.view{display:none}.view.active{display:block}.notice{background:#f7f8fa;border-radius:12px;padding:12px;color:#4b5563;font-size:13px;line-height:1.5}
+input[type=text]{width:100%;padding:11px;border:1px solid #dfe3e8;border-radius:11px;font:inherit;margin:8px 0}
+.empty{color:#6b7280;font-size:14px;padding:8px 0}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="date" id="date"></div>
+  <h1>今日学习</h1>
+  <div class="week" id="week"></div>
+</header>
+<main>
+
+<section id="home" class="view active">
+  <div class="card">
+    <div class="row"><h2>今日进度</h2><span class="muted" id="progressText"></span></div>
+    <div class="progress"><div id="progressBar"></div></div>
+  </div>
+
+  <div class="card">
+    <div class="row"><h2>今天的课</h2><span class="pill" id="todayLabel"></span></div>
+    <div id="todayClasses"></div>
+  </div>
+
+  <div class="card">
+    <div class="row"><h2>今天要做</h2><button class="btn" onclick="newTask()">+ 添加</button></div>
+    <div id="tasks"></div>
+  </div>
+
+  <div class="card">
+    <h2>系统建议</h2>
+    <div class="notice" id="advice"></div>
+  </div>
+</section>
+
+<section id="schedule" class="view">
+  <div class="card"><h2>本学期课程表</h2><div class="notice">正式版会根据“第几周 + 星期 + 课程具体周次”判断是否上课。下面先保存你已经提供给我的课程信息；部分存在单双周/指定周次的课程，后续再逐项校准。</div><div id="scheduleList"></div></div>
+</section>
+
+<section id="courses" class="view">
+  <div class="card"><h2>课程</h2><div id="courseList"></div></div>
+</section>
+
+<section id="wrong" class="view">
+  <div class="card"><h2>错题与掌握度</h2><div class="notice">这一页先搭好入口。下一阶段接入题库后：做错 → 自动进入错题本 → 对应知识点扣分 → 后续任务自动增加。</div></div>
+</section>
+
+</main>
+<nav>
+<button class="active" onclick="show('home',this)">今日学习</button>
+<button onclick="show('schedule',this)">课程表</button>
+<button onclick="show('courses',this)">课程</button>
+<button onclick="show('wrong',this)">错题</button>
+</nav>
+</div>
+
+<script>
+const semesterStart=new Date('2026-09-07T00:00:00');
+const classes=[
+['周一','08:30–10:00','大学英语AI'],['周一','10:20–11:50','英语口语（ACCA&CIMA）'],['周一','14:00–15:30','会计专业英语'],['周一','15:50–18:10','中国近现代史纲要'],['周一','19:00–21:20','职业生涯规划与就业指导 / 管理学实验'],
+['周二','08:30–10:00','心理健康'],['周二','10:20–11:50','高等数学'],['周二','14:00–15:30','大学体育1（气排球）'],['周二','19:00–21:20','会计学'],
+['周三','08:30–10:00','大学英语AI'],['周三','10:20–11:50','计算思维导论'],['周三','14:00–15:30','管理学'],['周三','15:50–18:10','高等数学'],['周三','19:00–21:20','形势与政策'],
+['周四','08:30–10:00','ACCA导论'],['周四','10:20–11:50','管理学实验'],
+['周五','08:30–10:00','英语写作CI'],['周五','10:20–11:50','计算思维导论实验'],['周五','14:00–15:30','管理学'],['周五','15:50–18:10','会计专业英语']
+];
+
+let tasks=JSON.parse(localStorage.getItem('study-v1-tasks')||'null');
+if(!tasks){
+ tasks=[
+ {id:1,course:'CET-4',title:'四级词汇',detail:'完成今天安排的词汇 + 昨日遗忘词复习',done:false},
+ {id:2,course:'CET-4',title:'四级听力',detail:'完成今天指定真题听力；做完后记录听不懂的位置',done:false},
+ {id:3,course:'高等数学',title:'高数复习',detail:'复习当前章节的定义、公式与典型题，不跳过基础概念',done:false},
+ {id:4,course:'会计专业英语',title:'专业英语',detail:'复习课堂专业词汇和老师讲过的重点',done:false},
+ {id:5,course:'计算思维导论',title:'计算思维导论',detail:'完成当前网课/题库任务；错题保留下来用于期末复习',done:false}
+ ];
+}
+const courses=[...new Set(classes.map(x=>x[2])),'CET-4'];
+function save(){localStorage.setItem('study-v1-tasks',JSON.stringify(tasks))}
+function week(d){return Math.floor((new Date(d.getFullYear(),d.getMonth(),d.getDate())-semesterStart)/604800000)+1}
+function wd(d){return ['周日','周一','周二','周三','周四','周五','周六'][d.getDay()]}
+
+function render(){
+ const d=new Date(),w=week(d),day=wd(d);
+ document.getElementById('date').textContent=d.toLocaleDateString('zh-CN',{year:'numeric',month:'long',day:'numeric',weekday:'long'});
+ document.getElementById('week').textContent=(w>=1&&w<=16)?`第 ${w} 周 · 正常教学周`:(w>=17&&w<=19?`第 ${w} 周 · 考试阶段`:`第 ${w} 周`);
+ document.getElementById('todayLabel').textContent=day;
+
+ const today=classes.filter(x=>x[0]===day);
+ document.getElementById('todayClasses').innerHTML=today.length?today.map(x=>`<div class="class"><span class="time">${x[1]}</span><span class="name">${x[2]}</span></div>`).join(''):'<div class="empty">今天没有录入的课程。</div>';
+
+ document.getElementById('tasks').innerHTML=tasks.map(t=>`<label class="task"><input type="checkbox" ${t.done?'checked':''} onchange="toggle(${t.id})"><span><b>${t.title}</b><small><span class="pill">${t.course}</span> ${t.detail}</small></span></label>`).join('');
+ const done=tasks.filter(t=>t.done).length,total=tasks.length;
+ document.getElementById('progressText').textContent=`${done}/${total}`;
+ document.getElementById('progressBar').style.width=(total?done/total*100:0)+'%';
+ document.getElementById('advice').textContent=done===total?'今天的任务全部完成。下一版会根据你的完成情况、错题和知识点掌握度重新生成下一天任务。':`先完成最重要的 ${tasks.find(t=>!t.done)?.title||'任务'}。你不需要自己安排先后顺序，系统以后会根据你的实际表现自动调整。`;
+
+ document.getElementById('scheduleList').innerHTML=classes.map(x=>`<div class="class"><span class="time">${x[0]}<br>${x[1]}</span><span class="name">${x[2]}</span></div>`).join('');
+ document.getElementById('courseList').innerHTML=courses.map(c=>`<div class="class"><span class="name">${c}</span><span class="pill">V1</span></div>`).join('');
+}
+function toggle(id){let t=tasks.find(x=>x.id===id);t.done=!t.done;save();render()}
+function newTask(){let title=prompt('今天要增加什么任务？');if(title){tasks.push({id:Date.now(),course:'自定义',title,detail:'自定义学习任务',done:false});save();render()}}
+function show(id,btn){document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));btn.classList.add('active')}
+render();
+</script>
+</body>
+</html>
