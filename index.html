@@ -59,14 +59,19 @@ label{display:block;font-size:13px;font-weight:700;margin:12px 0 7px}.small{font
 
       <div class="card">
         <div class="cardhead"><div class="title">今天要做</div><button class="addbtn" onclick="openTaskModal()">＋ 添加</button></div>
-        <div id="tasks"></div>
+        <div id="tasks">
+          <div class="task"><input class="check" type="checkbox"><div><div class="tt">四级词汇</div><div><span class="tag">CET-4</span></div><div class="desc">完成今天安排的词汇 + 昨日遗忘词复习</div></div></div>
+          <div class="task"><input class="check" type="checkbox"><div><div class="tt">四级听力</div><div><span class="tag">CET-4</span></div><div class="desc">完成今天指定听力训练；记录听不懂的位置</div></div></div>
+          <div class="task"><input class="check" type="checkbox"><div><div class="tt">高数复习</div><div><span class="tag">高等数学</span></div><div class="desc">复习当前章节定义、公式与典型题，不跳过基础概念</div></div></div>
+          <div class="task"><input class="check" type="checkbox"><div><div class="tt">当天课程整理</div><div><span class="tag">课程整理</span></div><div class="desc">把今天课堂讲到的重点整理进对应知识库</div></div></div>
+        </div>
       </div>
     </section>
 
     <section id="schedule" class="page">
       <div class="card">
         <div class="cardhead"><div class="title">本周课程</div><div class="small" id="scheduleWeek"></div></div>
-        <div id="weekSchedule"></div>
+        <div id="weekSchedule"><div class="empty">正在读取本周课程……</div></div>
       </div>
     </section>
 
@@ -81,7 +86,13 @@ label{display:block;font-size:13px;font-weight:700;margin:12px 0 7px}.small{font
       <div class="card">
         <div class="cardhead"><div class="title">知识库</div><button class="addbtn" onclick="openMethodModal()">＋ 添加</button></div>
         <div class="small">先选课程，再进入该课程的方法、公式和知识点。</div>
-        <div id="knowledgeCategories" style="margin-top:12px"></div>
+        <div id="knowledgeCategories" style="margin-top:12px">
+          <button class="qcat"><div><b>高等数学</b><small>极限、公式、定理、做题方法</small></div><div class="arrow">›</div></button>
+          <button class="qcat"><div><b>CET-4</b><small>词汇、听力、阅读、翻译、写作</small></div><div class="arrow">›</div></button>
+          <button class="qcat"><div><b>会计学</b><small>会计概念、分录、易错点</small></div><div class="arrow">›</div></button>
+          <button class="qcat"><div><b>会计专业英语</b><small>专业词汇和课堂重点</small></div><div class="arrow">›</div></button>
+          <button class="qcat"><div><b>计算思维导论</b><small>计算思维、人工智能、课程重点</small></div><div class="arrow">›</div></button>
+        </div>
       </div>
       <div class="card" id="knowledgeDetail" style="display:none">
         <div class="cardhead"><div class="title" id="knowledgeTitle"></div><button class="pill" onclick="closeKnowledge()">返回分类</button></div>
@@ -321,6 +332,9 @@ function showPage(id,btn){
   document.querySelectorAll(".nav button").forEach(x=>x.classList.remove("active"));
   btn.classList.add("active");
   if(id==="questions")renderQuestionCategories();
+  if(id==="schedule")renderSchedule();
+  if(id==="methods")renderMethods();
+  if(id==="home")renderTasks();
 }
 
 const questionBank = {
@@ -396,7 +410,7 @@ function submitQuestion(){
   });
   document.getElementById("qfeedback").innerHTML=`<div class="desc" style="margin-top:12px"><b>${ok?"✓ 回答正确":"✕ 回答错误"}</b>　正确答案：${q[2][q[3]]}<br>${q[4]}</div>`;
   const nx=document.getElementById("qnext");
-  nx.style.display="block";nx.textContent=qIndex<arr.length-1?"下一题":"完成本组";
+  nx.style.display="block";nx.textContent=qIndex<questionBank[qCategory].length-1?"下一题":"完成本组";
 }
 function nextQuestion(){
   const arr=questionBank[qCategory];
@@ -404,7 +418,14 @@ function nextQuestion(){
   else{renderQuestionCategories();document.getElementById("questionCategoryLabel").textContent="选择课程"}
 }
 
-renderHeader();renderTasks();renderSchedule();renderCourses();renderMethods();renderQuestionCategories();
+window.addEventListener("DOMContentLoaded",()=>{
+  try{renderHeader()}catch(e){console.error(e)}
+  try{renderTasks()}catch(e){console.error(e)}
+  try{renderSchedule()}catch(e){console.error(e)}
+  try{renderCourses()}catch(e){console.error(e)}
+  try{renderMethods()}catch(e){console.error(e)}
+  try{renderQuestionCategories()}catch(e){console.error(e)}
+});
 </script>
 </body>
 </html>
