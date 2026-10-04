@@ -153,7 +153,7 @@ const classes = [
 
  {d:3,t:0,n:"大学英语AI",r:"20102",w:"4、6、8、10、12、14、16周"},
  {d:3,t:0,n:"大学英语AI",r:"30203",w:"3、5、7、9、11、13、15周"},
- {d:3,t:1,n:"计算思维导论",r:"20102",w:"3–14周（隔周）"},
+ {d:3,t:1,n:"计算思维导论",r:"20102",w:"3–14周"},
  {d:3,t:1,n:"英语口语（ACCA&CIMA）",r:"20102",w:"15–16周"},
  {d:3,t:2,n:"管理学",r:"20315",w:"3–12周"},
  {d:3,t:3,n:"高等数学",r:"20213",w:"3–17周"},
@@ -184,8 +184,10 @@ function getWeek(d=new Date()){
   return Math.floor((x-s)/86400000/7)+1;
 }
 function inWeek(spec,w){
-  if(spec.includes("–")){let [a,b]=spec.split("–").map(Number);return w>=a&&w<=b}
-  const nums=[...spec.matchAll(/\d+/g)].map(x=>Number(x[0]));
+  const clean=String(spec).replace(/周/g,"").replace(/（.*?）/g,"");
+  const ranges=[...clean.matchAll(/(\d+)\s*[–-]\s*(\d+)/g)];
+  for(const m of ranges){ if(w>=+m[1] && w<=+m[2]) return true; }
+  const nums=[...clean.matchAll(/\d+/g)].map(m=>+m[0]);
   return nums.includes(w);
 }
 function dayName(d){return ["","星期一","星期二","星期三","星期四","星期五","星期六","星期日"][d]}
@@ -202,59 +204,54 @@ function renderHeader(){
   document.getElementById("dateLine").textContent=fmtDate();
   const w=getWeek();
   document.getElementById("weekLine").textContent=`第 ${w} 周 · ${w>=1&&w<=16?"正常教学周":"考试/非教学周"}`;
-  document.getElementById("dayPill").textContent=dayName(getDay());
   document.getElementById("scheduleWeek").textContent=`第 ${w} 周`;
 }
-function renderClasses(){
-  const list=todayClasses();
-  const el=document.getElementById("todayClasses");
-  if(!list.length){el.innerHTML='<div class="empty">今天没有安排的课程。</div>';return}
-  el.innerHTML=list.map(c=>`<div class="classrow">
-    <div class="time">${times[c.d][c.t]}</div>
-    <div><div class="classname">${c.n}</div><div class="room">教室：${c.r}</div><div class="weeks">${c.w}</div></div>
-  </div>`).join("");
+function taskStore(){return JSON.parse(localStorage.getItem("ai_v19_tasks")||"[]")}
+function saveTaskStore(x){localStorage.setItem("ai_v19_tasks",JSON.stringify(x))}
+function dateKey(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
+function taskHTML(t,done,key){
+  return `<div class="task ${done?"done":""}"><input class="check" type="checkbox" ${done?"checked":""} onchange="toggleTaskKey('${key.replace(/'/g,"\\'")}')"><div><div class="tt">${t.name}</div><div><span class="tag">${t.course}</span></div><div class="desc">${t.desc||""}</div></div></div>`;
 }
-function taskStore(){return JSON.parse(localStorage.getItem("ai_v15_tasks")||"[]")}
-function saveTaskStore(x){localStorage.setItem("ai_v15_tasks",JSON.stringify(x))}
-function getTodayTasks(){
-  const dateKey=new Date().toISOString().slice(0,10);
-  const custom=taskStore().filter(x=>x.date===dateKey);
-  if(custom.length)return custom;
-  return defaultTasks.map((x,i)=>({id:"d"+i,name:x[0],course:x[1],desc:x[2],done:false,date:dateKey}));
+function fixedDailyTasks(){
+  return [
+    ["四级词汇","CET-4","完成今天安排的词汇 + 昨日遗忘词复习"],
+    ["四级听力","CET-4","完成今天指定听力训练；记录听不懂的位置"],
+    ["高数复习","高等数学","复习当前章节定义、公式与典型题，不跳过基础概念"],
+    ["当天课程整理","课程整理","把今天课堂讲到的重点整理进对应知识库"]
+  ];
 }
-
-function getTodayClassTasks(){
-  return todayClasses().map((c,i)=>{
-    const q=courseTask(c);
-    return {id:`class-${i}-${c.n}`,name:q[0],course:c.n,desc:q[1],done:false};
-  });
+function classTask(c,i){
+  const academic=new Set(["大学英语AI","英语口语（ACCA&CIMA）","专业英语","中国近现代史纲要","高等数学","会计学","计算思维导论","管理学","ACCA导论","英语写作CI","形势与政策"]);
+  if(!academic.has(c.n)) return null;
+  return {name:`复习${c.n}`,course:c.n,desc:`整理今天课堂重点、公式/词汇和老师强调的内容。`};
 }
-
+function todayClassEntries(){
+  return todayClasses().map((c,i)=>({c,i,t:classTask(c,i)})).filter(x=>x.t);
+}
 function renderTasks(){
-  const key=getDateKey();
-  let st=JSON.parse(localStorage.getItem("ai_v17_day")||"{}");
-  if(st.date!==key){st={date:key,daily:{},classes:{},custom:[]};localStorage.setItem("ai_v17_day",JSON.stringify(st));}
-  const fixed=baseDailyTasks();
-  const generated=todayClasses().map((c,i)=>{
-    const q=courseTask(c);
-    return {id:`class-${i}-${c.n}`,name:q[0],course:c.n,desc:q[1],done:!!st.classes[i]};
-  });
-  const custom=(st.custom||[]);
-  const all=generated.concat(custom);
-
-  document.getElementById("fixedTasks").innerHTML=
-    fixed.map((t,i)=>taskHTML(t.name,t.course,t.desc,!!st.daily[i],`daily,${i}`)).join("")+
-    all.map((t,i)=>taskHTML(t.name,t.course,t.desc,!!t.done,`classes,${i}`)).join("");
-
-  const total=fixed.length+all.length;
-  const done=fixed.filter((t,i)=>!!st.daily[i]).length+all.filter(t=>!!t.done).length;
-  const pt=document.getElementById("progressText");
-  const pf=document.getElementById("progressFill");
-  if(pt)pt.textContent=`${done}/${total}`;
-  if(pf)pf.style.width=total?`${done/total*100}%`:"0%";
+  const key=dateKey();
+  let st=JSON.parse(localStorage.getItem("ai_v19_day")||"{}");
+  if(st.date!==key){st={date:key,daily:{},classes:{},custom:[]};localStorage.setItem("ai_v19_day",JSON.stringify(st));}
+  const fixed=fixedDailyTasks();
+  const entries=todayClassEntries();
+  const custom=st.custom||[];
+  let html="";
+  fixed.forEach((x,i)=>{html+=taskHTML({name:x[0],course:x[1],desc:x[2]},!!st.daily[i],`d-${i}`)});
+  entries.forEach((x)=>{const id=`c-${x.i}`;html+=taskHTML(x.t,!!st.classes[id],id)});
+  custom.forEach((x,i)=>{html+=taskHTML(x,!!x.done,`u-${i}`)});
+  document.getElementById("tasks").innerHTML=html||'<div class="empty">今天暂时没有安排的学习任务。</div>';
+  const total=fixed.length+entries.length+custom.length;
+  const done=fixed.filter((x,i)=>st.daily[i]).length+entries.filter(x=>st.classes[`c-${x.i}`]).length+custom.filter(x=>x.done).length;
+  document.getElementById("progressText").textContent=`${done}/${total}`;
+  document.getElementById("progressFill").style.width=total?`${done/total*100}%`:"0%";
 }
-function toggleTask(i){
-  const tasks=getTodayTasks();tasks[i].done=!tasks[i].done;saveTaskStore(tasks);renderTasks();
+function toggleTaskKey(key){
+  const date=dateKey();let st=JSON.parse(localStorage.getItem("ai_v19_day")||"{}");
+  if(st.date!==date){st={date,daily:{},classes:{},custom:[]};}
+  if(key.startsWith("d-")){const i=+key.slice(2);st.daily[i]=!st.daily[i];}
+  else if(key.startsWith("c-")){st.classes[key]=!st.classes[key];}
+  else if(key.startsWith("u-")){const i=+key.slice(2);if(st.custom[i])st.custom[i].done=!st.custom[i].done;}
+  localStorage.setItem("ai_v19_day",JSON.stringify(st));renderTasks();
 }
 function openTaskModal(){
   document.getElementById("taskCourse").innerHTML=courses.map(x=>`<option>${x}</option>`).join("");
@@ -262,17 +259,17 @@ function openTaskModal(){
 }
 function saveTask(){
   const name=document.getElementById("taskName").value.trim();if(!name)return;
-  const dateKey=new Date().toISOString().slice(0,10);
-  const tasks=getTodayTasks();
-  tasks.push({id:"c"+Date.now(),name,course:document.getElementById("taskCourse").value,desc:document.getElementById("taskDesc").value.trim(),done:false,date:dateKey});
-  saveTaskStore(tasks);closeModal("taskModal");document.getElementById("taskName").value="";document.getElementById("taskDesc").value="";renderTasks();
+  const date=dateKey();let st=JSON.parse(localStorage.getItem("ai_v19_day")||"{}");
+  if(st.date!==date){st={date,daily:{},classes:{},custom:[]};}
+  st.custom=st.custom||[];st.custom.push({name,course:document.getElementById("taskCourse").value,desc:document.getElementById("taskDesc").value.trim(),done:false});
+  localStorage.setItem("ai_v19_day",JSON.stringify(st));closeModal("taskModal");document.getElementById("taskName").value="";document.getElementById("taskDesc").value="";renderTasks();
 }
 function renderSchedule(){
   const w=getWeek(), el=document.getElementById("weekSchedule");
   let out="";
   for(let d=1;d<=5;d++){
     const arr=classes.filter(c=>c.d===d&&inWeek(c.w,w));
-    out+=`<div style="padding:10px 0 4px;font-weight:800">${dayName(d)}</div>`;
+    out+=`<div style="padding:10px 0 4px;font-weight:800">${dayName(d)}${d===getDay()?" · 今天":""}</div>`;
     out+=arr.length?arr.map(c=>`<div class="classrow"><div class="time">${times[c.d][c.t]}</div><div><div class="classname">${c.n}</div><div class="room">教室：${c.r}</div></div></div>`).join(""):'<div class="empty">无课</div>';
   }
   el.innerHTML=out;
