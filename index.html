@@ -170,8 +170,8 @@ const classes = [
  {d:3,t:3,n:"高等数学",r:"20213",w:"3–17周 [07–09节]"},
  {d:3,t:4,n:"形势与政策I",r:"20309",w:"5、7、9、11、13周 [10–11节]"},
 
- {d:4,t:0,n:"ACCA导论",r:"20102",w:"3周 [01–04节]"},
- {d:4,t:0,n:"ACCA导论",r:"20102",w:"5–15周 [01–04节]"},
+ {d:4,t:0,n:"ACCA导论",r:"20102",w:"3周 [01–04节]",tm:"08:30–11:50"},
+ {d:4,t:0,n:"ACCA导论",r:"20102",w:"5–15周 [01–04节]",tm:"08:30–11:50"},
  {d:4,t:1,n:"管理学实验",r:"20209",w:"16周（双周）[03–04节]"},
 
  {d:5,t:0,n:"英语写作CI",r:"20213",w:"3–16周 [01–02节]"},
@@ -282,7 +282,7 @@ function renderSchedule(){
   for(let d=1;d<=5;d++){
     const arr=classes.filter(c=>c.d===d&&inWeek(c.w,w));
     out+=`<div style="padding:10px 0 4px;font-weight:800">${dayName(d)}${d===getDay()?" · 今天":""}</div>`;
-    out+=arr.length?arr.map(c=>`<div class="classrow"><div class="time">${times[c.d][c.t]}</div><div><div class="classname">${c.n}</div><div class="room">教室：${c.r}</div></div></div>`).join(""):'<div class="empty">无课</div>';
+    out+=arr.length?arr.map(c=>`<div class="classrow"><div class="time">${c.tm||times[c.d][c.t]}</div><div><div class="classname">${c.n}</div><div class="room">教室：${c.r}</div></div></div>`).join(""):'<div class="empty">无课</div>';
   }
   el.innerHTML=out;
 }
