@@ -30,6 +30,12 @@ button,input,select,textarea{font:inherit}
 .nav button{flex:1;border:0;background:none;color:#8b93a0;font-size:11px}.nav button.active{color:var(--navy);font-weight:700}.nav .ico{display:block;font-size:19px;margin-bottom:3px}
 .page{display:none}.page.active{display:block}
 .listbtn{width:100%;text-align:left;border:0;background:#fff;padding:14px 0;border-bottom:1px solid var(--line)}
+.qcat{display:flex;align-items:center;justify-content:space-between;width:100%;padding:15px 14px;margin:7px 0;border:1px solid #e6e9ef;background:#fff;border-radius:14px;text-align:left}
+.qcat b{font-size:15px}.qcat small{display:block;color:#8a93a2;margin-top:4px}.arrow{color:#9aa1ad;font-size:18px}
+.qbox{padding:15px 0;border-bottom:1px solid var(--line)}.qbox:last-child{border-bottom:0}
+.answer{width:100%;text-align:left;border:1px solid #e1e5ec;background:#fff;border-radius:12px;padding:12px;margin-top:7px}
+.answer.selected{border-color:#2455a6;background:#eef4ff}.answer.correct{border-color:#3d9a61;background:#eff9f2}.answer.wrong{border-color:#cf5966;background:#fff1f2}
+
 select,textarea,input[type=text]{width:100%;border:1px solid #dfe3ea;border-radius:12px;padding:11px;background:#fff;outline:none}
 label{display:block;font-size:13px;font-weight:700;margin:12px 0 7px}.small{font-size:12px;color:var(--muted);line-height:1.5}
 .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:30;padding:70px 16px 20px}.modal.show{display:block}.modalbox{background:#fff;border-radius:20px;padding:18px;max-width:620px;margin:auto;max-height:85vh;overflow:auto}.modalhead{display:flex;justify-content:space-between;align-items:center}.close{border:0;background:#f0f2f5;border-radius:50%;width:34px;height:34px}
@@ -49,11 +55,6 @@ label{display:block;font-size:13px;font-weight:700;margin:12px 0 7px}.small{font
       <div class="card">
         <div class="cardhead"><div class="title">今日进度</div><div class="count" id="progressText">0/5</div></div>
         <div class="progressbar"><i id="progressFill"></i></div>
-      </div>
-
-      <div class="card">
-        <div class="cardhead"><div class="title">今天的课</div><div class="daypill" id="dayPill">星期一</div></div>
-        <div id="todayClasses"></div>
       </div>
 
       <div class="card">
@@ -78,8 +79,20 @@ label{display:block;font-size:13px;font-weight:700;margin:12px 0 7px}.small{font
 
     <section id="methods" class="page">
       <div class="card">
-        <div class="cardhead"><div class="title">方法 / 知识库</div><button class="addbtn" onclick="openMethodModal()">＋ 添加</button></div>
+        <div class="cardhead"><div class="title">知识库</div><button class="addbtn" onclick="openMethodModal()">＋ 添加</button></div>
+        <div class="small">先选课程，再进入该课程的方法、公式和知识点。</div>
+        <div id="knowledgeCategories" style="margin-top:12px"></div>
+      </div>
+      <div class="card" id="knowledgeDetail" style="display:none">
+        <div class="cardhead"><div class="title" id="knowledgeTitle"></div><button class="pill" onclick="closeKnowledge()">返回分类</button></div>
         <div id="methodList"></div>
+      </div>
+    </section>
+
+    <section id="questions" class="page">
+      <div class="card">
+        <div class="cardhead"><div class="title">题库</div><div class="small" id="questionCategoryLabel">选择课程</div></div>
+        <div id="questionCategories"></div>
       </div>
     </section>
 
@@ -94,9 +107,9 @@ label{display:block;font-size:13px;font-weight:700;margin:12px 0 7px}.small{font
   <nav class="nav">
     <button class="active" onclick="showPage('home',this)"><span class="ico">⌂</span>今日学习</button>
     <button onclick="showPage('schedule',this)"><span class="ico">▦</span>课程表</button>
-    <button onclick="showPage('courses',this)"><span class="ico">◫</span>课程</button>
+    <button onclick="showPage('questions',this)"><span class="ico">✓</span>题库</button>
     <button onclick="showPage('methods',this)"><span class="ico">≡</span>知识库</button>
-    <button onclick="showPage('wrong',this)"><span class="ico">✓</span>错题</button>
+    <button onclick="showPage('wrong',this)"><span class="ico">✕</span>错题</button>
   </nav>
 </div>
 
@@ -209,16 +222,36 @@ function getTodayTasks(){
   if(custom.length)return custom;
   return defaultTasks.map((x,i)=>({id:"d"+i,name:x[0],course:x[1],desc:x[2],done:false,date:dateKey}));
 }
+
+function getTodayClassTasks(){
+  return todayClasses().map((c,i)=>{
+    const q=courseTask(c);
+    return {id:`class-${i}-${c.n}`,name:q[0],course:c.n,desc:q[1],done:false};
+  });
+}
+
 function renderTasks(){
-  const tasks=getTodayTasks();
-  const el=document.getElementById("tasks");
-  el.innerHTML=tasks.map((t,i)=>`<div class="task ${t.done?"done":""}">
-    <input class="check" type="checkbox" ${t.done?"checked":""} onchange="toggleTask(${i})">
-    <div><div class="tt">${t.name}</div><div class="desc"><span class="tag">${t.course}</span>${t.desc}</div></div>
-  </div>`).join("");
-  const done=tasks.filter(x=>x.done).length,total=tasks.length;
-  document.getElementById("progressText").textContent=`${done}/${total}`;
-  document.getElementById("progressFill").style.width=total?`${done/total*100}%`:"0%";
+  const key=getDateKey();
+  let st=JSON.parse(localStorage.getItem("ai_v17_day")||"{}");
+  if(st.date!==key){st={date:key,daily:{},classes:{},custom:[]};localStorage.setItem("ai_v17_day",JSON.stringify(st));}
+  const fixed=baseDailyTasks();
+  const generated=todayClasses().map((c,i)=>{
+    const q=courseTask(c);
+    return {id:`class-${i}-${c.n}`,name:q[0],course:c.n,desc:q[1],done:!!st.classes[i]};
+  });
+  const custom=(st.custom||[]);
+  const all=generated.concat(custom);
+
+  document.getElementById("fixedTasks").innerHTML=
+    fixed.map((t,i)=>taskHTML(t.name,t.course,t.desc,!!st.daily[i],`daily,${i}`)).join("")+
+    all.map((t,i)=>taskHTML(t.name,t.course,t.desc,!!t.done,`classes,${i}`)).join("");
+
+  const total=fixed.length+all.length;
+  const done=fixed.filter((t,i)=>!!st.daily[i]).length+all.filter(t=>!!t.done).length;
+  const pt=document.getElementById("progressText");
+  const pf=document.getElementById("progressFill");
+  if(pt)pt.textContent=`${done}/${total}`;
+  if(pf)pf.style.width=total?`${done/total*100}%`:"0%";
 }
 function toggleTask(i){
   const tasks=getTodayTasks();tasks[i].done=!tasks[i].done;saveTaskStore(tasks);renderTasks();
@@ -247,14 +280,34 @@ function renderSchedule(){
 function renderCourses(){document.getElementById("courseList").innerHTML=courses.map(x=>`<div class="listbtn"><b>${x}</b><div class="small">后续可继续加入题库、知识点和错题</div></div>`).join("")}
 function methods(){return JSON.parse(localStorage.getItem("ai_v15_methods")||"[]")}
 function renderMethods(){
-  const built=[
-    ["极限的和差积商法则","高等数学","极限存在时可按和、差、积运算；商法则要求分母极限不为0。"],
-    ["两个重要极限","高等数学","sin x / x → 1（x→0）；(1+1/x)^x → e（x→∞）。"],
-    ["立方差公式","高等数学","a³−b³=(a−b)(a²+ab+b²)，常用于0/0型极限约分。"],
-    ["四级听力精听法","CET-4","先做题再精听；标出听不懂的位置，回听并核对原文。"]
-  ].concat(methods());
-  document.getElementById("methodList").innerHTML=built.map(m=>`<div class="classrow"><div><div class="classname">${m[0]}</div><div class="room">${m[1]}</div><div class="weeks">${m[2]}</div></div></div>`).join("");
+  const all=[
+    ["高等数学","math","极限、公式、定理、做题方法"],
+    ["CET-4","english","词汇、听力、阅读、翻译、写作"],
+    ["会计学","accounting","会计概念、分录、易错点"],
+    ["会计专业英语","proenglish","专业词汇和课堂重点"],
+    ["计算思维导论","computer","计算思维、人工智能、课程重点"]
+  ];
+  document.getElementById("knowledgeCategories").innerHTML=all.map(x=>
+    `<button class="qcat" onclick="openKnowledge('${x[1]}','${x[0]}')"><div><b>${x[0]}</b><small>${x[2]}</small></div><div class="arrow">›</div></button>`
+  ).join("");
 }
+function openKnowledge(filter,title){
+  const built=[
+    ["极限的和差积商法则","math","若各极限存在，则和、差、积可直接分别取极限；商法则还要求分母极限不为0。"],
+    ["两个重要极限","math","lim(x→0) sin x/x=1；lim(x→∞)(1+1/x)^x=e。"],
+    ["立方差公式","math","a³−b³=(a−b)(a²+ab+b²)，常用于0/0型极限约分。"],
+    ["四级听力精听法","english","第一遍做题；第二遍看原文核对；第三遍关闭原文重新听。"],
+    ["asset","proenglish","资产；会计专业英语高频词。"],
+    ["liability","proenglish","负债；会计专业英语高频词。"],
+    ["机器学习","computer","机器学习是人工智能的重要技术基础。"]
+  ].concat(methods());
+  const list=built.filter(x=>x[1]===filter);
+  document.getElementById("knowledgeTitle").textContent=title;
+  document.getElementById("methodList").innerHTML=list.length?list.map(m=>`<div class="classrow"><div><div class="classname">${m[0]}</div><div class="weeks">${m[2]}</div></div></div>`).join(""):'<div class="empty">这个分类目前还没有内容，可以点击右上角“添加”。</div>';
+  document.getElementById("knowledgeDetail").style.display="block";
+  document.getElementById("knowledgeCategories").style.display="none";
+}
+function closeKnowledge(){document.getElementById("knowledgeDetail").style.display="none";document.getElementById("knowledgeCategories").style.display="block"}
 function openMethodModal(){
   document.getElementById("methodCourse").innerHTML=courses.map(x=>`<option>${x}</option>`).join("");
   document.getElementById("methodModal").classList.add("show");
@@ -270,8 +323,91 @@ function showPage(id,btn){
   document.getElementById(id).classList.add("active");
   document.querySelectorAll(".nav button").forEach(x=>x.classList.remove("active"));
   btn.classList.add("active");
+  if(id==="questions")renderQuestionCategories();
 }
-renderHeader();renderClasses();renderTasks();renderSchedule();renderCourses();renderMethods();
+
+const questionBank = {
+  "CET-4":[
+    ["词汇","The new policy may ______ the development of small businesses.",["A. affect","B. effect","C. afford","D. effort"],0,"affect 是动词“影响”。"],
+    ["词汇","Students should be ______ of the importance of time management.",["A. aware","B. awake","C. alive","D. alone"],0,"be aware of = 意识到。"],
+    ["阅读","Focused study with regular breaks can be more effective than simply studying for longer hours. What is the main idea?",["A. Longer study is always better.","B. Breaks are unnecessary.","C. Focused study and breaks may improve learning.","D. Students should study all night."],2,"文章强调专注学习与适当休息。"]
+  ],
+  "高等数学":[
+    ["极限","若 lim(x→0) sin x / x = ?",["A. 0","B. 1","C. ∞","D. 不存在"],1,"重要极限：lim(x→0) sin x/x=1，x 使用弧度。"],
+    ["极限","lim(x→∞)(1+1/x)^x = ?",["A. 0","B. 1","C. e","D. ∞"],2,"第二个重要极限，结果为 e。"],
+    ["公式","a³−b³ = ?",["A. (a−b)(a²+ab+b²)","B. (a+b)(a²−ab+b²)","C. (a−b)(a²−ab+b²)","D. (a+b)(a²+ab+b²)"],0,"立方差公式，常用于0/0型极限因式分解。"],
+    ["极限","求 lim(x→1) (x³−1)/(x−1)。",["A. 0","B. 1","C. 3","D. 不存在"],2,"x³−1=(x−1)(x²+x+1)，约分后代入 x=1 得3。"],
+    ["极限","求 lim(x→0) (1−cos x)/x²。",["A. 0","B. 1/2","C. 1","D. 不存在"],1,"利用 1−cos x=2sin²(x/2)，得到 1/2。"]
+  ],
+  "会计学":[
+    ["基础概念","会计的基本职能主要包括？",["A. 核算和监督","B. 生产和销售","C. 采购和仓储","D. 预测和招聘"],0,"会计的基本职能通常表述为核算和监督。"]
+  ],
+  "会计专业英语":[
+    ["词汇","asset 的中文含义是？",["A. 负债","B. 资产","C. 收入","D. 费用"],1,"asset = 资产。"],
+    ["词汇","liability 的中文含义是？",["A. 资产","B. 所有者权益","C. 负债","D. 利润"],2,"liability = 负债。"]
+  ],
+  "计算思维导论":[
+    ["人工智能","机器学习通常被视为人工智能的重要核心技术之一。",["A. 正确","B. 错误"],0,"机器学习是现代人工智能的重要技术基础。"]
+  ]
+};
+let qCategory="", qIndex=0, qSelected=null, qAnswered=false;
+
+function renderQuestionCategories(){
+  const el=document.getElementById("questionCategories");
+  el.innerHTML=Object.keys(questionBank).map(c=>{
+    const n=questionBank[c].length;
+    return `<button class="qcat" onclick="openQuestionSet('${c.replace(/'/g,"\\'")}')"><div><b>${c}</b><small>${n} 道题 · 进入后逐题作答</small></div><div class="arrow">›</div></button>`;
+  }).join("");
+}
+function openQuestionSet(c){
+  qCategory=c;qIndex=0;qSelected=null;qAnswered=false;
+  renderQuestion();
+}
+function renderQuestion(){
+  const el=document.getElementById("questionCategories");
+  const arr=questionBank[qCategory];
+  if(!arr){renderQuestionCategories();return}
+  const q=arr[qIndex];
+  document.getElementById("questionCategoryLabel").textContent=`${qCategory} · ${qIndex+1}/${arr.length}`;
+  el.innerHTML=`
+    <div class="qbox">
+      <div class="small">${q[0]}</div>
+      <div style="font-size:18px;font-weight:750;line-height:1.7;margin:10px 0">${q[1]}</div>
+      <div id="qopts">${q[2].map((x,i)=>`<button class="answer" onclick="selectQuestion(${i})">${x}</button>`).join("")}</div>
+      <button class="addbtn primary" style="width:100%;margin-top:12px" onclick="submitQuestion()">提交答案</button>
+      <div id="qfeedback"></div>
+      <button class="addbtn" style="width:100%;margin-top:9px;display:none" id="qnext" onclick="nextQuestion()">下一题</button>
+      <button class="pill" style="margin-top:12px;border:0" onclick="renderQuestionCategories()">返回课程分类</button>
+    </div>`;
+}
+function selectQuestion(i){
+  if(qAnswered)return;
+  qSelected=i;
+  document.querySelectorAll("#qopts .answer").forEach((x,k)=>x.classList.toggle("selected",k===i));
+}
+function submitQuestion(){
+  if(qSelected===null){alert("请先选择答案");return}
+  if(qAnswered)return;
+  qAnswered=true;
+  const q=questionBank[qCategory][qIndex],ok=qSelected===q[3];
+  let st=JSON.parse(localStorage.getItem("ai_v17_questions")||"[]");
+  st.push({category:qCategory,question:q[1],correct:ok,date:new Date().toISOString()});
+  localStorage.setItem("ai_v17_questions",JSON.stringify(st));
+  document.querySelectorAll("#qopts .answer").forEach((x,k)=>{
+    if(k===q[3])x.classList.add("correct");
+    if(k===qSelected&&k!==q[3])x.classList.add("wrong");
+  });
+  document.getElementById("qfeedback").innerHTML=`<div class="desc" style="margin-top:12px"><b>${ok?"✓ 回答正确":"✕ 回答错误"}</b>　正确答案：${q[2][q[3]]}<br>${q[4]}</div>`;
+  const nx=document.getElementById("qnext");
+  nx.style.display="block";nx.textContent=qIndex<arr.length-1?"下一题":"完成本组";
+}
+function nextQuestion(){
+  const arr=questionBank[qCategory];
+  if(qIndex<arr.length-1){qIndex++;qSelected=null;qAnswered=false;renderQuestion()}
+  else{renderQuestionCategories();document.getElementById("questionCategoryLabel").textContent="选择课程"}
+}
+
+renderHeader();renderTasks();renderSchedule();renderCourses();renderMethods();renderQuestionCategories();
 </script>
 </body>
 </html>
