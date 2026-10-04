@@ -281,7 +281,11 @@ function renderSchedule(){
   const w=getWeek(), el=document.getElementById("weekSchedule");
   let out="";
   for(let d=1;d<=5;d++){
-    const arr=classes.filter(c=>c.d===d&&inWeek(c.w,w));
+    let arr=classes.filter(c=>c.d===d&&inWeek(c.w,w));
+    // 原课表明确规定：第3–16周每周四晚 19:00–21:20 为经济法概论。
+    if(d===4 && w>=3 && w<=16 && !arr.some(c=>c.n==="经济法概论")){
+      arr.push({d:4,t:4,n:"经济法概论",r:"20413",w:"3–16周 [10–12节]"});
+    }
     out+=`<div style="padding:10px 0 4px;font-weight:800">${dayName(d)}${d===getDay()?" · 今天":""}</div>`;
     out+=arr.length?arr.map(c=>`<div class="classrow"><div class="time">${c.tm||times[c.d][c.t]}</div><div><div class="classname">${c.n}</div><div class="room">教室：${c.r}</div></div></div>`).join(""):'<div class="empty">无课</div>';
   }
